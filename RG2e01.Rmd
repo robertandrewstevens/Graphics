@@ -1000,12 +1000,203 @@ text(x = seq(s1$x + 1, s1$x + 8.5, by = 0.5), y = rep(4, 16),
 
 ## Figure 1.13: An infographic
 
-```{r comment=NA}
+https://www.stat.auckland.ac.nz/%7Epaul/RG2e/examples-infographic.R
 
+```{r comment=NA}
+library(pixmap)
+library(grid)
+
+pic <- read.pnm(system.file("extra", "AfterTheBombs.pnm", package = "RGraphics"))
+
+source(system.file("extra", "as.raster.R", package = "RGraphics"))
+
+w <- 1024 # 578
+h <- 768 # 500
+picRaster <- as.raster(pic)
+bg <- picRaster # [1:h, (1024 - w):1024]
+
+unknown <- 8.7
+total <- 9.1
+known <- total - unknown
+
+theta0 <- pi/4
+thetaN <- theta0 + 2*pi*unknown/total
+theta <- seq(theta0, thetaN, length.out = 100)
+x <- 0.3*c(0, cos(theta)) + 0.5
+y <- 0.3*c(0, sin(theta)) + 0.35
+
+# grid.newpage()
+grid.raster(bg)
+pushViewport(viewport(width = unit(1, "snpc"), height = unit(1, "snpc"),
+                      gp = gpar(cex = 1.2)))
+grid.polygon(x, y, gp = gpar(col = NA, fill = rgb(0.67, 0, 0.11, 0.7)))
+label1 <- textGrob("UNACCOUNTED\nFOR",
+                   unit(0.2, "npc") - unit(2, "mm"),
+                   unit(0.6, "npc") + unit(2, "mm"),
+                   gp = gpar(cex = 1.4, fontface = "bold"),
+                   just = c("right", "bottom"))
+grid.rect(0.2, 0.6, just = c("right", "bottom"),
+          width = grobWidth(label1) + unit(4, "mm"),
+          height = grobHeight(label1) + unit(4, "mm"),
+          gp = gpar(col = NA, fill = rgb(1, 1, 1, 0.5)))
+grid.draw(label1)
+label2 <- textGrob("ACCOUNTED\nFOR", 
+                   unit(0.8, "npc") + unit(2, "mm"),
+                   unit(0.6, "npc") + unit(2, "mm"),
+                   gp = gpar(cex = 1.4, fontface = "bold"),
+                   just = c("left", "bottom"))
+grid.rect(0.8, 0.6, just = c("left", "bottom"),
+          width = grobWidth(label2) + unit(4, "mm"),
+          height = grobHeight(label2) + unit(4, "mm"),
+          gp = gpar(col = NA, fill = rgb(1, 1, 1, 0.5)))
+grid.draw(label2)
+grid.segments(c(0.2, 0.8), 0.6,
+              c(0.3, 0.7), 0.5,
+              gp = gpar(lty = "dotted", lwd = 2))
+heading <- textGrob("The Department of Defense is unable to account for the use of
+$8.7 billion of the $9.1 billion it spent on reconstruction in Iraq",
+                    x = unit(0.5, "cm"),
+                    y = unit(3, "lines"),
+                    just = c("left", "top"),
+                    gp = gpar(cex = 1, col = "white"))
+pushViewport(viewport(x = 0, y = 1,
+                      just = c("left", "top"),
+                      height = grobHeight(heading) + unit(4, "lines"),
+                      width = grobWidth(heading) + unit(1, "cm")))
+grid.rect(gp = gpar(fill = "black"))
+grid.segments(x0 = unit(0.5, "cm"),
+              x1 = unit(1, "npc") - unit(0.5, "cm"),
+              y0 = unit(1, "npc") - unit(2, "lines"),
+              y1 = unit(1, "npc") - unit(2, "lines"),
+              gp = gpar(col = "grey50", lwd = 2))
+grid.text("That's 96 Percent",
+          x = unit(0.5, "cm"),
+          y = unit(1, "npc") - unit(1, "lines"),
+          just = "left",
+          gp = gpar(fontface = "bold", col = "white"))
+grid.draw(heading)
+popViewport(2)
 ```
 
 ## Figure 1.14: The structure of the R graphics system
 
-```{r comment=NA}
+https://www.stat.auckland.ac.nz/%7Epaul/RG2e/organisation-graphicslevels.R
 
+```{r comment=NA}
+library(graph) # package ‘graph’ is not available (for R version 3.2.2)
+library(Rgraphviz) # package ‘Rgraphviz’ is not available (for R version 3.2.2)
+
+grpkgs <- new("graphNEL", 
+              nodes = c(
+                # engine
+                "grDevices", 
+                # systems
+                "graphics", "grid",
+                # graphics-based packages
+                "maps", "diagram", "plotrix", "gplots", "pixmap", 
+                # grid-based packages
+                "lattice", "ggplot2", "grImport", "gridBase", "vcd",
+                # interface packages
+                "rgl", "rggobi", "iplots",
+                # devices
+                "JavaGD", "Cairo", "tikzDevice"),
+                # ggplot-based packages
+                # "DescribeDisplay",
+                # lattice-based packages
+                # "latticist", "latticeExtra"),
+              edgeL = list(
+                grDevices = list(edges = c("graphics", "grid",
+                                 "JavaGD", "Cairo", "tikzDevice")),
+                graphics = list(edges=c("maps", "diagram", "plotrix",
+                                "gplots", "pixmap", 
+                                "gridBase")),
+                grid = list(edges=c("lattice", "ggplot2", "grImport", "vcd",
+                            "gridBase")),
+                maps = list(),
+                diagram = list(),
+                plotrix = list(),
+                gplots = list(),
+                pixmap = list(),
+                lattice = list(), # edges=c("latticist", "latticeExtra")), 
+#                latticist=list(),
+#                latticeExtra=list(),
+                ggplot2 = list(), # edges="DescribeDisplay"),
+                # DescribeDisplay=list(),
+                grImport = list(),
+                gridBase = list(),
+                vcd = list(),
+                # Invisible links to tie interface packages together
+                rgl = list(edges="rggobi"),
+                rggobi = list(edges="iplots"),
+                iplots = list(edges="rgl"),
+#                GDD=list(edges=c("grDevices")),
+#                JavaGD=list(edges=c("grDevices")),
+#                Cairo=list(edges=c("grDevices")),
+#                cairoDevice=list(edges=c("grDevices")),
+#                tikzDevice=list(edges="grDevices")),
+                JavaGD = list(),
+                Cairo = list(),
+                tikzDevice = list()),
+              edgemode = "directed")
+
+# systemPkgs <- subGraph(c("graphics", "grid"), grpkgs)
+# graphicsPkgs <- subGraph(c("maps", "diagram", "plotrix",
+#                            "gplots", "pixmap"), grpkgs)
+# gridPkgs <- subGraph(c("grid", "lattice", "ggplot2", "grImport"), grpkgs)
+# 
+# devicePkgs <- subGraph(c("GDD", "JavaGD", "Cairo", 
+#                          "cairoDevice", "tikzDevice"),
+#                        grpkgs)
+interfacePkgs <- subGraph(c("iplots", "rggobi", "rgl"), grpkgs)
+
+ragraph <- agopen(grpkgs, name = "whatever",
+                  # layoutType="dot", 
+                  layoutType = "dot", 
+                  # layoutType="twopi", 
+                  attrs = list(
+                    node = list(fontname = "Helvetica", fontsize = 10),
+                    edge = list(arrowhead = "none"),
+                    # NOTE: size and margins controlled below in call to 'dot'
+                    graph = list(
+                      root = "grDevices",
+                      # ratio=3/4,
+                      rankdir = "LR")),
+#                      compound=TRUE)),
+                  subGList = list(
+#                    list(graph=devicePkgs), 
+#                    list(graph=systemPkgs),
+#                    list(graph=graphicsPkgs),
+#                    list(graph=gridPkgs),
+                    list(graph = interfacePkgs)))
+
+nodeDataDefaults(ragraph, "style") <- "filled"
+nodeDataDefaults(ragraph, "fillcolor") <- "gray90"
+nodeData(ragraph, 
+         c("grDevices", "graphics", "grid", "lattice", "ggplot2"), 
+         "style") <- "filled"
+nodeData(ragraph, 
+         c("grDevices", "graphics", "grid", "lattice", "ggplot2"), 
+         "fillcolor") <- "gray70"
+
+# clusterData(ragraph, 0, "label") <- "Devices"
+# clusterData(ragraph, 1, "label") <- "Systems"
+# clusterData(ragraph, 2, "label") <- "Graphics-based Packages"
+# clusterData(ragraph, 3, "label") <- "Grid-based Packages"
+clusterData(ragraph, 0, "style") <- "dashed"
+
+# Edge from "grDevices" to "Interface Packages" cluster
+# (Needs existing link from grDevices to rgl)
+# edgeDataDefaults(ragraph, "lhead") <- NA
+# edgeData(ragraph, "grDevices", "rgl", "lhead") <- "cluster_1" 
+
+# Edges within "Interface Packages" cluster
+edgeData(ragraph, "rgl", "rggobi", "style") <- "invis"
+edgeData(ragraph, "rggobi", "iplots", "style") <- "invis"
+edgeData(ragraph, "iplots", "rgl", "style") <- "invis"
+# edgeData(ragraph, "pixmap", "rgl", "style") <- "invis"
+# edgeData(ragraph, "gridBase", "rggobi", "style") <- "invis"
+# edgeData(ragraph, "lattice", "iplots", "style") <- "invis"
+
+toFile(ragraph, filename = "grpkgs.dot", fileType = "dot")
+system("dot -Kneato grpkgs.dot -Tps -Gsize='8,8' -Gmargin=0 > organisation-graphicslevels.ps")
 ```
